@@ -19,7 +19,7 @@ class Vehiculos:
             print(f"El vehiculo {self.Nombre} se puede cargar.")
         else:
             print(f"El vehiculo {self.Nombre} no necesita cargarse.")
-class hibrido(Vehiculos):
+class es_Hibrido(Vehiculos):
     def __init__(self, Nombre, Marca, Color,hibrido ):
         super().__init__(Nombre, Marca, Color,hibrido= True)
         self.hibrido = hibrido
@@ -30,10 +30,10 @@ class No_Hibrido(Vehiculos):
         super().__init__(Nombre, Marca, Color,hibrido= False)
         self.hibrido = hibrido
 
-auto= hibrido ("Tesla", "Model S", "Rojo", True)
+auto= es_Hibrido ("Tesla", "Model S", "Rojo", True)
 
 auto2= No_Hibrido ("Ford", "Mustang", "Azul", False)
 
-auto.cargar()
+auto.es_hibrido()
 auto2.cargar()
 
