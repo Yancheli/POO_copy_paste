@@ -1,0 +1,19 @@
+{% extends 'layout.html' %}
+{% block title %} Login {% endblock %}
+
+{% block CSS_customer %}
+    
+     <h1>Hello, {{  data.nombre}}!</h1>
+
+    {% if data.cantidad > 0 %}
+    <ul>
+    {% for i in data.gustos %}
+       <li>
+        Uno de sus gustos es: {{ i }}
+       </li>
+    </ul>  
+    {% endfor %}
+    {% else %}
+    <h4>No tiene gustos</h4>
+    {% endif %}
+ {% endblock %}

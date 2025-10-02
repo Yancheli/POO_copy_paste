@@ -11,7 +11,9 @@ app = Flask(__name__, template_folder='src/templates')
 def hola_mundo():
     datos = {"nombre": "Miguel",
              "edad": 18}
-    return render_template('auth/login.html',data = datos)
+    gustos = ["Programar", "Correr", "Jugar"]
+    return render_template('auth/login.html',data = datos,gustos = gustos,titulo = "Pagina de inicio")
+   
 
 
 if __name__ == '__main__':
