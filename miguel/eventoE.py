@@ -53,6 +53,54 @@ def colocar_elementos(tablero):
                 posiciones_ocupadas.append((fila, columna))
                 break
 
+    def colocar_elementos(tablero):
+                posiciones_ocupadas = []
+
+                # colocar tesoro
+                while True:
+                    fila = random.randint(0, TAMAÑO_TABLERO - 1)
+                    columna = random.randint(0, TAMAÑO_TABLERO - 1)
+                    if (fila, columna) not in posiciones_ocupadas:
+                        tablero[fila][columna] = 'T'
+                        tesoro = (fila, columna)
+                        posiciones_ocupadas.append(tesoro)
+                        break
+
+                # colocar trampas iniciales
+                trap_positions = []
+                for _ in range(NUM_TRAMPAS):
+                    while True:
+                        fila = random.randint(0, TAMAÑO_TABLERO - 1)
+                        columna = random.randint(0, TAMAÑO_TABLERO - 1)
+                        if (fila, columna) not in posiciones_ocupadas:
+                            tablero[fila][columna] = 'X'
+                            posiciones_ocupadas.append((fila, columna))
+                            trap_positions.append((fila, columna))
+                            break
+
+                return tesoro, trap_positions
+
+
+def mover_trampas(tablero, trap_positions, tesoro):
+                # limpiar trampas viejas
+                for (r, c) in trap_positions:
+                    if tablero[r][c] == 'X':
+                        tablero[r][c] = '-'
+
+                nuevas = []
+                while len(nuevas) < len(trap_positions):
+                    r = random.randint(0, TAMAÑO_TABLERO - 1)
+                    c = random.randint(0, TAMAÑO_TABLERO - 1)
+                    if (r, c) == tesoro:
+                        continue
+                    if tablero[r][c] == '-' and (r, c) not in nuevas:
+                        tablero[r][c] = 'X'
+                        nuevas.append((r, c))
+
+                return nuevas
+
+
+
 def mostrar_tablero_final(tablero):
     
     print("\n asi queda el tablero final:")
@@ -77,6 +125,7 @@ def jugar_busqueda_tesoro():
         print(f"\nIntentos restantes: {intentos_restantes}")
         
         try:
+            mostrar_tablero_final(tablero)
             fila_usr = int(input("Ingresa la fila (0-4): "))
             col_usr = int(input("Ingresa la columna (0-4): "))
 
