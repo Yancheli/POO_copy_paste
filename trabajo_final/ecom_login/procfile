@@ -1,3 +1,4 @@
-web: gunicorn trabajo_final.ecom_login.app:app
+web: gunicorn ecom_login.app:app
+
 
 
