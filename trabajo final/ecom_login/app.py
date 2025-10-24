@@ -1,58 +1,51 @@
 from flask import Flask, render_template, request, redirect, url_for, flash
-from werkzeug.security import generate_password_hash, check_password_hash
-from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
+from flask_login import LoginManager, login_user, login_required, logout_user, current_user
+from werkzeug.security import generate_password_hash
+from config import Config
+from models import db, Usuario
 
 # ---------------------- CONFIGURACIÓN INICIAL ----------------------
 app = Flask(__name__)
-app.secret_key = 'clave-secreta-123'
+app.config.from_object(Config)
 
-# Configuración de Flask-Login
+db.init_app(app)
+with app.app_context():
+    db.create_all()
+
+# ---------------------- CONFIGURACIÓN DE LOGIN ----------------------
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 login_manager.login_message = "Por favor, inicia sesión para acceder a esta página."
 login_manager.login_message_category = "warning"
 
-# diccionario temporal
-usuarios = {}
-
-# Clase usuario para Flask-Login
-class Usuario(UserMixin):
-    def __init__(self, id):
-        self.id = id
-
 @login_manager.user_loader
 def load_user(user_id):
-    if user_id in usuarios:
-        return Usuario(user_id)
-    return None
+    return Usuario.query.get(int(user_id))
 
-# --------------------------------------------
+# ---------------------- RUTAS ----------------------
 
 @app.route('/')
 @login_required
 def home():
-    return f"""
-    <h2>Bienvenido, {current_user.id}!</h2>
-    <a href='/logout'>Cerrar sesión</a> |
-    <a href='/ajustes'>Ajustes</a> |
-    <a href='/cambio_pass'>Cambiar contraseña</a>
-    """
+    if current_user.rol == 'admin':
+        return render_template('admin/dashboard.html', nombre=current_user.correo)
+    return render_template('user/catalogo.html', nombre=current_user.correo)
 
-# ---------- INICIO DE SESIÓN ----------
+# ---------- LOGIN ----------
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
         correo = request.form['correo']
         contraseña = request.form['contraseña']
 
-        if correo in usuarios and check_password_hash(usuarios[correo]['password'], contraseña):
-            usuario = Usuario(correo)
+        usuario = Usuario.query.filter_by(correo=correo).first()
+        if usuario and usuario.check_password(contraseña):
             login_user(usuario)
             flash('Has iniciado sesión correctamente.', 'success')
             return redirect(url_for('home'))
         else:
-            flash('El correo o la contraseña son incorrectos.', 'danger')
+            flash('Correo o contraseña incorrectos.', 'danger')
 
     return render_template('login.html')
 
@@ -60,66 +53,61 @@ def login():
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
+        nombre = request.form['nombre']
         correo = request.form['correo']
         contraseña = request.form['contraseña']
 
-        if correo in usuarios:
+        existente = Usuario.query.filter_by(correo=correo).first()
+        if existente:
             flash('Este correo ya está registrado.', 'warning')
         else:
-            usuarios[correo] = {'password': generate_password_hash(contraseña)}
+            nuevo = Usuario(nombre=nombre, correo=correo, rol='cliente')
+            nuevo.set_password(contraseña)
+            db.session.add(nuevo)
+            db.session.commit()
             flash('Registro exitoso. Ahora puedes iniciar sesión.', 'success')
             return redirect(url_for('login'))
 
     return render_template('register.html')
 
 # ---------- CAMBIO DE CONTRASEÑA ----------
-@app.route('/cambio_pass', methods=['GET', 'POST'])
+@app.route('/change_password', methods=['GET', 'POST'])
+@login_required
 def change_password():
     if request.method == 'POST':
-        correo = request.form['correo']
         nueva = request.form['nueva']
-
-        if correo in usuarios:
-            usuarios[correo]['password'] = generate_password_hash(nueva)
-            flash('La contraseña se actualizó correctamente.', 'success')
-            return redirect(url_for('login'))
-        else:
-            flash('No se encontró ningún usuario con ese correo.', 'danger')
+        current_user.set_password(nueva)
+        db.session.commit()
+        flash('Contraseña actualizada correctamente.', 'success')
+        return redirect(url_for('home'))
 
     return render_template('cambio_pass.html')
 
-# ---------- AJUSTES DE USUARIO (CAMBIO DE CORREO SOLAMENTE) ----------
+# ---------- AJUSTES DE USUARIO ----------
 @app.route('/ajustes', methods=['GET', 'POST'])
 @login_required
 def ajustes_usuario():
     if request.method == 'POST':
         nuevo_correo = request.form['nuevo_correo']
-
-        # Verificar que no esté en uso
-        if nuevo_correo in usuarios:
+        existente = Usuario.query.filter_by(correo=nuevo_correo).first()
+        if existente:
             flash('Ese correo ya está en uso.', 'warning')
         else:
-            # Copiar los datos del usuario actual al nuevo correo
-            usuarios[nuevo_correo] = usuarios.pop(current_user.id)
-            
-            # Actualizar sesión
-            logout_user()
-            usuario = Usuario(nuevo_correo)
-            login_user(usuario)
-            
-            flash('Tu correo se actualizó correctamente.', 'success')
+            current_user.correo = nuevo_correo
+            db.session.commit()
+            flash('Correo actualizado correctamente.', 'success')
             return redirect(url_for('home'))
 
-    return render_template('ajustes.html', correo_actual=current_user.id)
+    return render_template('ajustes.html', correo_actual=current_user.correo)
 
-# ---------- CERRAR SESIÓN ----------
+# ---------- LOGOUT ----------
 @app.route('/logout')
 @login_required
 def logout():
     logout_user()
-    flash('Has cerrado sesión correctamente.', 'info')
+    flash('Sesión cerrada correctamente.', 'info')
     return redirect(url_for('login'))
 
-# ---------------------- EJECUCIÓN o LANZAMIENTO ----------------------
+# ---------------------- EJECUCIÓN ----------------------
 if __name__ == '__main__':
     app.run(debug=True)
