@@ -7,16 +7,27 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-  <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
-    <div class="container">
-      <a class="navbar-brand" href="/">Minimum Paste 👾</a>
+  <nav class="navbar navbar-dark bg-dark">
+    <div class="container-fluid d-flex justify-content-between align-items-center">
+      <a class="navbar-brand text-light" href="{{ url_for('home') }}">Minimum Paste 👑</a>
+
       <div>
-        <a href="{{ url_for('login') }}" class="btn btn-outline-light me-2">Ingrese</a>
-        <a href="{{ url_for('register') }}" class="btn btn-outline-light me-2">Registrese</a>
-        <a href="{{ url_for('change_password') }}" class="btn btn-outline-warning">¿No recuerda su contraseña?</a>
+        {% if current_user.is_authenticated %}
+          <span class="text-light me-3">Hola, {{ current_user.nombre }}</span>
+          <a href="{{ url_for('logout') }}" class="btn btn-outline-danger">Cerrar sesión</a>
+        {% else %}
+          <a href="{{ url_for('login') }}" class="btn btn-outline-light">Ingrese</a>
+          <a href="{{ url_for('register') }}" class="btn btn-outline-primary ms-2">Regístrese</a>
+          <a href="{{ url_for('change_password') }}" class="btn btn-outline-warning ms-2">¿No recuerda su contraseña?</a>
+        {% endif %}
+
+        {% if current_user.is_authenticated and current_user.rol == 'admin' %}
+          <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-info me-2">Panel Admin</a>
+        {% endif %}
       </div>
     </div>
   </nav>
+
 
   <div class="container">
     {% with messages = get_flashed_messages(with_categories=true) %}
